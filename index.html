@@ -80,7 +80,7 @@ button,input,select{font-family:inherit}
 }
 #libsearch input:focus{border-color:var(--brass)}
 #libgrid{
-  flex:1;overflow-y:auto;padding:10px 12px 24px;
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 12px 24px;
   display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start;
 }
 #libgrid::-webkit-scrollbar{width:8px}
@@ -90,8 +90,35 @@ button,input,select{font-family:inherit}
   overflow:hidden;transition:all .15s;position:relative;
 }
 .libcard:hover{border-color:var(--brass);transform:translateY(-2px);box-shadow:0 6px 14px rgba(0,0,0,.4)}
-.libcard .thumb{height:84px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 38%,#26312700,#161d17),#1d261e}
-.libcard .thumb svg{width:74px;height:74px}
+.libcard .thumb{height:84px;min-height:84px;flex:none;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 38%,#26312700,#161d17),#1d261e}
+.libcard .thumb.paper{background:#ebe5d6}
+.libcard .thumb img{width:74px;height:74px;display:block;flex:none}
+.libcard .thumb svg{width:74px;height:74px;min-width:74px;min-height:74px;flex:none;display:block}
+
+/* ---- bloom viewer ---- */
+#viewer{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;background:rgba(8,12,9,.74);backdrop-filter:blur(3px)}
+#viewer.open{display:flex}
+#vwpanel{
+  width:min(450px,94vw);max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  background:linear-gradient(180deg,#222c23,#1b231c);border:1px solid #41513f;
+  border-radius:16px;padding:16px;box-shadow:0 24px 60px rgba(0,0,0,.65);
+}
+#vwhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px}
+#vwname{font-size:19px;font-style:italic;color:var(--paper)}
+#vwclose{width:36px;height:36px;flex:none;border-radius:50%;background:#243024;border:1px solid #3c4a3d;color:var(--text);font-size:15px;cursor:pointer}
+#vwclose:hover{border-color:var(--brass)}
+#vwstage{position:relative;background:#ebe5d6;border-radius:12px;display:flex;align-items:center;justify-content:center;padding:14px;min-height:240px}
+#vwimg{width:100%;max-width:340px;height:auto;display:block}
+.vwnav{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:1px solid #c9b98c;background:rgba(26,33,26,.88);color:#ecdfbe;font-size:20px;cursor:pointer;line-height:1}
+.vwnav:hover{background:rgba(48,60,46,.95)}
+#vwprev{left:8px}#vwnext{right:8px}
+#vwvar{display:flex;flex-wrap:wrap;gap:9px;margin:13px 2px}
+#vwvar .s{width:32px;height:32px;border-radius:50%;cursor:pointer;border:2px solid rgba(255,255,255,.2);transition:transform .12s}
+#vwvar .s:hover{transform:scale(1.12)}
+#vwvar .s.on{border-color:var(--brass);box-shadow:0 0 0 2px rgba(192,154,82,.45)}
+#vwadd{width:100%;padding:13px;border-radius:10px;border:1px solid #dcbb79;background:linear-gradient(160deg,#caa45c,#a87f37);color:#241a06;font-weight:700;font-size:14px;cursor:pointer;letter-spacing:.04em;font-family:inherit}
+#vwadd:hover{filter:brightness(1.08)}
+#vwcount{font-size:11.5px;color:var(--muted);text-align:center;margin-top:9px;letter-spacing:.06em}
 .libcard .nm{font-size:11px;text-align:center;padding:5px 4px 7px;color:#cfd6c4;letter-spacing:.02em;border-top:1px solid #28332a}
 .libcard .sw{position:absolute;top:6px;right:6px;display:flex;gap:3px}
 .libcard .sw i{width:9px;height:9px;border-radius:50%;border:1px solid rgba(255,255,255,.25)}
@@ -174,7 +201,9 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
   #main{flex-direction:column}
   #library,#inspector{
     position:absolute;left:0;right:0;bottom:0;top:auto;height:52vh;width:100%;min-width:0;
-    border:none;border-top:2px solid var(--brass2);transform:translateY(110%);transition:transform .25s;
+    border:none;border-top:2px solid var(--brass2);transform:translateY(110%);
+    visibility:hidden;
+    transition:transform .25s,visibility 0s .25s;
     border-radius:18px 18px 0 0;box-shadow:0 -12px 30px rgba(0,0,0,.5);
     padding-top:18px;
   }
@@ -182,7 +211,7 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
     content:"";position:absolute;top:7px;left:50%;transform:translateX(-50%);
     width:44px;height:4px;border-radius:2px;background:#4a5a4b;
   }
-  #library.open,#inspector.open{transform:translateY(0)}
+  #library.open,#inspector.open{transform:translateY(0);visibility:visible;transition:transform .25s,visibility 0s 0s}
   /* keep the design visible above the drawer */
   body.drawer-open #stagewrap{align-items:flex-start;padding-top:6px}
   #libgrid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}
@@ -238,6 +267,7 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
       <div class="libtab on" data-cat="bloom">Blooms</div>
       <div class="libtab" data-cat="green">Greenery</div>
       <div class="libtab" data-cat="filler">Fillers</div>
+      <div class="libtab" data-cat="ink">Ink</div>
       <div class="libtab" data-cat="vase">Vases</div>
     </div>
     <div id="libsearch"><input id="searchbox" type="text" placeholder="Search the cooler…"></div>
@@ -324,6 +354,20 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
     </div>
 
     <div id="countbar">0 stems on the bench</div>
+  </div>
+</div>
+
+<div id="viewer">
+  <div id="vwpanel">
+    <div id="vwhead"><div id="vwname"></div><button id="vwclose">✕</button></div>
+    <div id="vwstage">
+      <img id="vwimg" alt="">
+      <button class="vwnav" id="vwprev">‹</button>
+      <button class="vwnav" id="vwnext">›</button>
+    </div>
+    <div id="vwvar"></div>
+    <button id="vwadd">＋ Add to bouquet</button>
+    <div id="vwcount"></div>
   </div>
 </div>
 
@@ -1269,6 +1313,128 @@ species({id:"queenanne",name:"Queen Anne's lace",cat:"filler",w:110,h:150,anchor
   return s;
  }});
 
+/* ============== INK LINE ART ============== */
+const INKV=[
+ {name:"Black ink",c:["#4a4a4a","#1d1d1d","#000000"]},
+ {name:"White ink",c:["#ffffff","#f4f1e8","#d2cdbe"]},
+ {name:"Sepia",c:["#b08a5c","#6e4a26","#3a2410"]},
+ {name:"Sage ink",c:["#9cb08c","#5c7350","#32422c"]},
+ {name:"Wine ink",c:["#c4607a","#7e2440","#46102a"]},
+ {name:"Crimson",c:["#e87a72","#b02a28","#5e0c0c"]},
+ {name:"Royal blue",c:["#7e9ad8","#3a59a8","#1a2c62"]},
+ {name:"Teal",c:["#6cb0a8","#2e7a72","#123e3a"]},
+ {name:"Violet",c:["#a884cc","#6c3e9e","#371a58"]},
+ {name:"Copper",c:["#d89a64","#a8642a","#5c3210"]},
+ {name:"Rose gold",c:["#e8aaa0","#c47868","#7e4036"]},
+ {name:"Antique gold",c:["#dcb964","#a8842e","#5e4812"]}];
+const inkK=col=>`fill="none" stroke="${col}" stroke-linecap="round" stroke-linejoin="round"`;
+const inkLeafP=(col,len=28,w=11,sw=1.6)=>`<path d="M0,0 Q${-w},${-len*.35} ${-w*.62},${-len*.76} Q${-w*.22},${-len} 0,${-len} Q${w*.22},${-len} ${w*.62},${-len*.76} Q${w},${-len*.35} 0,0 Z M0,-3 L0,${-len+3.5}" ${inkK(col)} stroke-width="${sw}"/>`;
+const inkRoseHead=(x,y,sc,col)=>{
+  const K=inkK(col);let s="";
+  for(let i=0;i<8;i++)s+=G(i*45+10,0,0,`<path d="${broad(33,18)}" transform="translate(0 39)" ${K} stroke-width="2.1"/>`);
+  for(let i=0;i<6;i++)s+=G(i*60+32,0,0,`<path d="${broad(21,12)}" transform="translate(0 26)" ${K} stroke-width="1.8"/>`);
+  for(let i=0;i<8;i++)s+=G(i*45+10,0,0,`<path d="M-7,33 Q0,28 7,33" ${K} stroke-width="1.1" opacity=".65"/>`);
+  s+=`<path d="M0,0 m-9,0 a9,9 0 1,1 18,0 a7,7 0 1,0 -14,0 a5,5 0 1,1 10,0 a3.2,3.2 0 1,0 -6.4,0 a1.8,1.8 0 1,1 3.6,0" ${K} stroke-width="1.9"/>`;
+  return `<g transform="translate(${x} ${y}) scale(${sc})">${s}</g>`};
+const inkHibHead=(x,y,sc,col)=>{
+  const K=inkK(col);let s="";
+  const pet="M0,0 C-5,-7 -15,-14 -18,-26 C-21,-37 -16,-45 -7,-43 Q0,-47 7,-43 C16,-45 21,-37 18,-26 C15,-14 5,-7 0,0 Z";
+  for(let i=0;i<5;i++)
+    s+=G(i*72,0,0,`<g transform="translate(0 2)"><path d="${pet}" ${K} stroke-width="2.1"/>
+      <path d="M0,-7 L0,-37 M-2,-10 L-9,-32 M2,-10 L9,-32" ${K} stroke-width="1" opacity=".65"/></g>`);
+  s+=`<circle cx="0" cy="0" r="3.4" ${K} stroke-width="1.6"/>
+      <path d="M2,-2 C10,-12 17,-19 23,-25" ${K} stroke-width="2.3"/>
+      <circle cx="17" cy="-16" r="1.7" fill="${col}"/><circle cx="20" cy="-13" r="1.7" fill="${col}"/><circle cx="21" cy="-19" r="1.7" fill="${col}"/>
+      <circle cx="24" cy="-26" r="2.3" fill="${col}"/><circle cx="28" cy="-23" r="2.3" fill="${col}"/><circle cx="27" cy="-30" r="2.3" fill="${col}"/><circle cx="31" cy="-27" r="2.3" fill="${col}"/>`;
+  return `<g transform="translate(${x} ${y}) scale(${sc})">${s}</g>`};
+
+species({id:"inkrose",name:"Ink rose",cat:"ink",w:100,h:100,anchor:[50,92],
+ variants:INKV,
+ draw(u,c){return inkRoseHead(50,50,1,c[1])}});
+
+species({id:"inkrosestem",name:"Long-stem ink rose",cat:"ink",w:92,h:190,anchor:[46,182],
+ variants:INKV,
+ draw(u,c){const col=c[1],K=inkK(col);
+  let s=`<path d="M46,182 C50,150 41,114 47,76" ${K} stroke-width="2.4"/>
+  <path d="M49.5,181 C53,150 44,114 50,79" ${K} stroke-width="1" opacity=".5"/>
+  <path d="M45,152 l-6,-4 l7,-1.5 M48,120 l6,-4 l-7,-1.5" ${K} stroke-width="1.4"/>
+  <g transform="translate(44 144) rotate(-56)">${inkLeafP(col,30,11)}</g>
+  <g transform="translate(47 108) rotate(54)">${inkLeafP(col,32,12)}</g>
+  <g transform="translate(45 128) rotate(46)">${inkLeafP(col,23,9)}</g>
+  <g transform="translate(46 162) rotate(-44)">${inkLeafP(col,22,8.5)}</g>`;
+  s+=inkRoseHead(47,42,.82,col);
+  return s}});
+
+species({id:"inkrosespray",name:"Ink rose spray",cat:"ink",w:132,h:122,anchor:[66,114],
+ variants:INKV,
+ draw(u,c){const col=c[1],K=inkK(col);
+  let s=`<path d="M66,114 C58,96 48,78 42,62 M66,114 C72,94 84,78 94,66 M66,114 C68,100 72,90 80,80 M66,114 C60,102 52,96 44,92" ${K} stroke-width="1.9"/>`;
+  // foliage
+  s+=`<g transform="translate(44 92) rotate(-78)">${inkLeafP(col,24,9)}</g>
+  <g transform="translate(58 84) rotate(-30)">${inkLeafP(col,20,8)}</g>
+  <g transform="translate(86 84) rotate(40)">${inkLeafP(col,22,8.5)}</g>
+  <g transform="translate(98 70) rotate(64)">${inkLeafP(col,18,7)}</g>`;
+  // berry / dot sprig
+  s+=`<path d="M70,96 C76,84 84,74 92,64" ${K} stroke-width="1.2"/>
+  <circle cx="92" cy="64" r="2.4" fill="${col}"/><circle cx="86" cy="70" r="2" fill="${col}"/><circle cx="95" cy="71" r="2" fill="${col}"/>`;
+  // bud
+  s+=`<g transform="translate(104 38) rotate(22)"><path d="${tear(22,9)}" ${K} stroke-width="1.8"/>
+  <path d="M0,0 l-5,9 M0,0 l5,9 M0,0 l0,10" ${K} stroke-width="1.5"/></g>
+  <path d="M94,66 C98,57 101,48 104,40" ${K} stroke-width="1.7"/>`;
+  s+=inkRoseHead(42,46,.74,col)+inkRoseHead(88,52,.56,col);
+  return s}});
+
+species({id:"inkhibiscus",name:"Ink hibiscus",cat:"ink",w:110,h:104,anchor:[55,96],
+ variants:INKV,
+ draw(u,c){return inkHibHead(55,52,1,c[1])}});
+
+species({id:"inkhibsil",name:"Hibiscus silhouette",cat:"ink",w:106,h:102,anchor:[53,94],
+ variants:INKV,
+ draw(u,c){const col=c[1];let s="";
+  const pet="M0,-3 C-3,-7 -9,-12 -12,-21 C-15,-30 -13,-38 -7,-35 Q-3,-40 0,-37 Q3,-40 7,-35 C13,-38 15,-30 12,-21 C9,-12 3,-7 0,-3 Z";
+  for(let i=0;i<5;i++)s+=G(i*72,0,0,`<path d="${pet}" fill="${col}"/>`);
+  s+=`<circle cx="0" cy="0" r="3" fill="${col}"/>
+  <path d="M0,-1 L19,-23" stroke="${col}" stroke-width="3.2" stroke-linecap="round"/>
+  <circle cx="21" cy="-25" r="2.5" fill="${col}"/><circle cx="25" cy="-22" r="2.5" fill="${col}"/>
+  <circle cx="24" cy="-28" r="2.5" fill="${col}"/><circle cx="28" cy="-25" r="2.5" fill="${col}"/>`;
+  return `<g transform="translate(53 50) scale(1.18)">${s}</g>`}});
+
+species({id:"inkhibbranch",name:"Hibiscus branch",cat:"ink",w:124,h:152,anchor:[62,144],
+ variants:INKV,
+ draw(u,c){const col=c[1],K=inkK(col);
+  let s=`<path d="M62,144 C58,116 56,92 50,64 M58,112 C70,102 80,94 90,90 M55,88 C44,80 38,74 34,66" ${K} stroke-width="2.1"/>`;
+  s+=`<g transform="translate(90 90) rotate(66)">${inkLeafP(col,26,10)}</g>
+  <g transform="translate(34 66) rotate(-62)">${inkLeafP(col,24,9)}</g>
+  <g transform="translate(72 104) rotate(30)">${inkLeafP(col,20,8)}</g>`;
+  // bud
+  s+=`<g transform="translate(86 56) rotate(26)"><path d="${tear(26,10)}" ${K} stroke-width="1.9"/>
+  <path d="M0,0 C-2,-8 -1,-16 0,-24 M-4,-3 C-5,-10 -4,-16 -2,-21" ${K} stroke-width="1" opacity=".7"/>
+  <path d="M0,0 l-6,8 M0,0 l6,8 M0,0 l0,9" ${K} stroke-width="1.5"/></g>
+  <path d="M74,96 C78,82 82,68 86,58" ${K} stroke-width="1.8"/>`;
+  s+=inkHibHead(48,46,.8,col);
+  return s}});
+
+species({id:"inkpeony",name:"Ink peony",cat:"ink",w:102,h:102,anchor:[51,94],
+ variants:INKV,
+ draw(u,c){const col=c[1],K=inkK(col);let s="";
+  for(let i=0;i<9;i++)s+=G(i*40+6,0,0,`<path d="${broad(36,21)}" transform="translate(0 42)" ${K} stroke-width="2"/>`);
+  for(let i=0;i<7;i++)s+=G(i*51.4+24,0,0,`<path d="${broad(23,14)}" transform="translate(0 28) rotate(${i%2?7:-7})" ${K} stroke-width="1.7"/>`);
+  for(let i=0;i<5;i++)s+=G(i*72+40,0,0,`<path d="${broad(13,8)}" transform="translate(0 15)" ${K} stroke-width="1.5"/>`);
+  for(let k=0;k<7;k++){const a=k*51.4*Math.PI/180;
+    s+=`<line x1="0" y1="0" x2="${Math.cos(a)*5.5}" y2="${Math.sin(a)*5.5}" stroke="${col}" stroke-width="1.2"/>
+    <circle cx="${Math.cos(a)*6.6}" cy="${Math.sin(a)*6.6}" r="1.1" fill="${col}"/>`}
+  return `<g transform="translate(51 51)">${s}</g>`}});
+
+species({id:"inkleafspray",name:"Ink foliage",cat:"ink",w:100,h:172,anchor:[50,164],
+ variants:INKV,
+ draw(u,c){const col=c[1],K=inkK(col);
+  let s=`<path d="M50,164 C48,128 50,92 46,32" ${K} stroke-width="2"/>`;
+  for(let i=0;i<8;i++){const t=i/8,y=150-t*112,x=49-t*2.6,side=i%2?1:-1;
+    const len=26-t*12,w=10-t*4;
+    s+=`<g transform="translate(${x} ${y}) rotate(${side*(62-t*14)})">${inkLeafP(col,len,w,1.5)}</g>`}
+  s+=`<g transform="translate(46 32) rotate(-4)">${inkLeafP(col,15,5.5,1.5)}</g>`;
+  return s}});
+
 /* ============== VASES ==============
    each vase: viewBox 240x300, mouth = [x,y] where stems converge,
    gather = point inside vase stems sink to. split into back & front
@@ -1647,6 +1813,13 @@ stage.addEventListener("touchend",()=>pinch=null);
 
 document.addEventListener("keydown",e=>{
   if(e.target.tagName==="INPUT")return;
+  const vw=document.getElementById("viewer");
+  if(vw&&vw.classList.contains("open")){
+    if(e.key==="Escape")closeViewer();
+    else if(e.key==="ArrowLeft")$("vwprev").click();
+    else if(e.key==="ArrowRight")$("vwnext").click();
+    else if(e.key==="Enter")$("vwadd").click();
+    e.preventDefault();return}
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault();e.shiftKey?redo():undo();return}
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="y"){e.preventDefault();redo();return}
   if(SEL==null)return;
@@ -1768,36 +1941,102 @@ $("bgCustom").oninput=e=>{state.bg=e.target.value;[...bgRow.children].forEach(x=
 
 /* ---------- library ---------- */
 let CAT="bloom",QUERY="";
-const NOTES={bloom:"Tap to add a bloom — every flower is painted live as layered vector art.",
+const NOTES={bloom:"Tap any card to view it full size, flip through colors, and add it to the design.",
   green:"Foliage builds the silhouette. Add greens first, then layer blooms over them.",
   filler:"Texture & air: clouds, spikes, berries and lace to finish the design.",
+  ink:"Hand-inked botanical line art in 12 ink colors. Tap a card to preview — try White ink on dark backdrops.",
   vase:"Choose the vessel. Stems re-draw themselves into whatever you pick."};
+function speciesSVG(sp,vi,px){
+  const v=sp.variants[vi]||sp.variants[0];
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" viewBox="0 0 ${sp.w} ${sp.h}" preserveAspectRatio="xMidYMid meet">${sp.draw("d"+sp.id+vi,v.c)}</svg>`;
+  return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg)}
+function vaseSVG(v,px){
+  const p=v.draw("dv"+v.id);
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" viewBox="30 30 180 250" preserveAspectRatio="xMidYMid meet">${p.back}${p.front}</svg>`;
+  return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg)}
 function thumb(sp,vi=0){
-  return `<svg viewBox="0 0 ${sp.w} ${sp.h}" preserveAspectRatio="xMidYMid meet">${sp.draw("t"+sp.id+vi,sp.variants[vi].c)}</svg>`}
+  return `<img width="74" height="74" src="${speciesSVG(sp,vi,74)}" alt="${sp.name}">`}
 function buildLib(){
   const grid=document.getElementById("libgrid");grid.innerHTML="";
   const note=document.createElement("div");note.className="lib-note";note.textContent=NOTES[CAT];grid.appendChild(note);
+  const addThumb=(card,src,paper)=>{
+    const t=document.createElement("div");
+    t.className="thumb"+(paper?" paper":"");
+    // inline sizing: immune to any stylesheet / webview quirk
+    t.style.cssText="height:84px;min-height:84px;display:flex;align-items:center;justify-content:center;"+(paper?"background:#ebe5d6;":"");
+    const im=document.createElement("img");
+    im.width=74;im.height=74;im.alt="";im.draggable=false;
+    im.loading="eager";im.decoding="sync";
+    im.style.cssText="width:74px;height:74px;display:block;flex:none";
+    im.onerror=()=>{t.textContent="✿";t.style.fontSize="30px";t.style.color="#8a9480"};
+    im.src=src;
+    t.appendChild(im);card.appendChild(t)};
+  const addName=(card,txt)=>{
+    const n=document.createElement("div");n.className="nm";
+    n.style.cssText="min-height:24px";n.textContent=txt;card.appendChild(n)};
   if(CAT==="vase"){
     VASES.forEach(v=>{
       if(QUERY&&!v.name.toLowerCase().includes(QUERY))return;
       const card=document.createElement("div");card.className="libcard";
-      const p=v.draw("th"+v.id);
-      card.innerHTML=`<div class="thumb"><svg viewBox="30 30 180 250">${p.back}${p.front}</svg></div><div class="nm">${v.name}</div>`;
+      card.style.minHeight="110px";
+      addThumb(card,vaseSVG(v,74),false);addName(card,v.name);
       card.onclick=()=>{snapshot();state.vase.id=v.id;render()};
       grid.appendChild(card)});
     return}
   SPECIES.filter(s=>s.cat===CAT).forEach(sp=>{
     if(QUERY&&!sp.name.toLowerCase().includes(QUERY))return;
     const card=document.createElement("div");card.className="libcard";
-    const sw=sp.variants.slice(0,4).map(v=>`<i style="background:${v.c[1]}"></i>`).join("");
-    card.innerHTML=`<div class="thumb">${thumb(sp)}</div><div class="nm">${sp.name}</div><div class="sw">${sw}</div>`;
-    card.onclick=()=>addItem(sp.id,Math.floor(Math.random()*sp.variants.length));
+    card.style.minHeight="110px";
+    addThumb(card,speciesSVG(sp,0,74),sp.cat==="ink");addName(card,sp.name);
+    const sw=document.createElement("div");sw.className="sw";
+    sp.variants.slice(0,4).forEach(v=>{
+      const i=document.createElement("i");i.style.background=v.c[1];sw.appendChild(i)});
+    card.appendChild(sw);
+    card.onclick=()=>openViewer(sp.id);
     grid.appendChild(card)});
 }
 document.querySelectorAll(".libtab").forEach(t=>t.onclick=()=>{
   document.querySelectorAll(".libtab").forEach(x=>x.classList.remove("on"));
   t.classList.add("on");CAT=t.dataset.cat;buildLib()});
 document.getElementById("searchbox").oninput=e=>{QUERY=e.target.value.trim().toLowerCase();buildLib()};
+
+/* ---------- full-size bloom viewer ---------- */
+const VW={ids:[],i:0,vi:0};
+const lum=h=>{const n=parseInt(h.slice(1),16);return(0.299*(n>>16&255)+0.587*(n>>8&255)+0.114*(n&255))/255};
+function viewerList(){return SPECIES.filter(s=>s.cat===CAT&&(!QUERY||s.name.toLowerCase().includes(QUERY))).map(s=>s.id)}
+function openViewer(id,vi=0){
+  VW.ids=viewerList();if(!VW.ids.length)return;
+  VW.i=Math.max(0,VW.ids.indexOf(id));VW.vi=vi;
+  $("viewer").classList.add("open");drawViewer()}
+function closeViewer(){$("viewer").classList.remove("open")}
+function drawViewer(){
+  const sp=byId(VW.ids[VW.i]);if(!sp)return;
+  if(VW.vi>=sp.variants.length)VW.vi=0;
+  const v=sp.variants[VW.vi];
+  $("vwname").textContent=sp.name;
+  $("vwimg").src=speciesSVG(sp,VW.vi,420);
+  // dark easel for pale inks, paper for everything else
+  $("vwstage").style.background=lum(v.c[1])>.72?"#28312a":"#ebe5d6";
+  const row=$("vwvar");row.innerHTML="";
+  sp.variants.forEach((vv,vi)=>{
+    const b=document.createElement("div");b.className="s"+(vi===VW.vi?" on":"");
+    b.style.background=`radial-gradient(circle at 35% 30%, ${vv.c[0]}, ${vv.c[1]} 60%, ${vv.c[2]})`;
+    b.title=vv.name;
+    b.onclick=()=>{VW.vi=vi;drawViewer()};
+    row.appendChild(b)});
+  $("vwcount").textContent=`${v.name} · ${VW.i+1} of ${VW.ids.length} — swipe ‹ › to browse`;
+}
+$("vwclose").onclick=closeViewer;
+$("viewer").addEventListener("pointerdown",e=>{if(e.target.id==="viewer")closeViewer()});
+$("vwprev").onclick=()=>{VW.i=(VW.i-1+VW.ids.length)%VW.ids.length;VW.vi=0;drawViewer()};
+$("vwnext").onclick=()=>{VW.i=(VW.i+1)%VW.ids.length;VW.vi=0;drawViewer()};
+$("vwadd").onclick=()=>{const sp=byId(VW.ids[VW.i]);closeViewer();addItem(sp.id,VW.vi)};
+/* swipe between blooms */
+let vwTouch=null;
+$("vwstage").addEventListener("touchstart",e=>{vwTouch=e.touches[0].clientX},{passive:true});
+$("vwstage").addEventListener("touchend",e=>{
+  if(vwTouch==null)return;const dx=e.changedTouches[0].clientX-vwTouch;vwTouch=null;
+  if(Math.abs(dx)>44){if(dx<0)$("vwnext").click();else $("vwprev").click()}},{passive:true});
 
 /* ---------- toolbar ---------- */
 const btnUndo=$("btnUndo"),btnRedo=$("btnRedo");
@@ -1943,6 +2182,12 @@ function setDrawer(which){ // "library" | "inspector" | "stage"
   document.getElementById("inspector").classList.toggle("open",which==="inspector");
   document.body.classList.toggle("drawer-open",which!=="stage");
   fitStage();
+  // iOS WebKit computes zero layout for content built while the drawer was
+  // transformed off-screen — rebuild the grid once it's actually visible.
+  if(which==="library"){
+    clearTimeout(setDrawer._t);
+    setDrawer._t=setTimeout(()=>buildLib(),290);
+  }
 }
 document.querySelectorAll(".mtab").forEach(t=>t.onclick=()=>setDrawer(t.dataset.m));
 // tapping the design closes any open drawer on mobile
