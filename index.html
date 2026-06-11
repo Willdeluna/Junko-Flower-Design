@@ -127,8 +127,13 @@ button,input,select{font-family:inherit}
 .panel h3{
   font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--brass);
   font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px;
+  cursor:pointer;
 }
 .panel h3::after{content:"";flex:1;height:1px;background:#334134}
+.panel h3 .caret{font-size:11px;transition:transform .18s;color:#8a9480;letter-spacing:0}
+.panel.closed h3{margin-bottom:0}
+.panel.closed h3 .caret{transform:rotate(-90deg)}
+.panel.closed > *:not(h3){display:none}
 .ctl{margin-bottom:10px}
 .ctl:last-child{margin-bottom:0}
 .ctl label{display:flex;justify-content:space-between;font-size:11px;color:#c4cdb8;margin-bottom:5px;letter-spacing:.02em}
@@ -168,17 +173,36 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
 @media(max-width:880px){
   #main{flex-direction:column}
   #library,#inspector{
-    position:absolute;left:0;right:0;bottom:46px;top:auto;height:46vh;width:100%;min-width:0;
+    position:absolute;left:0;right:0;bottom:0;top:auto;height:52vh;width:100%;min-width:0;
     border:none;border-top:2px solid var(--brass2);transform:translateY(110%);transition:transform .25s;
+    border-radius:18px 18px 0 0;box-shadow:0 -12px 30px rgba(0,0,0,.5);
+    padding-top:18px;
+  }
+  #library::before,#inspector::before{
+    content:"";position:absolute;top:7px;left:50%;transform:translateX(-50%);
+    width:44px;height:4px;border-radius:2px;background:#4a5a4b;
   }
   #library.open,#inspector.open{transform:translateY(0)}
-  #libgrid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
-  #mobiletabs{display:flex;background:#141b15;border-top:1px solid #0d120e;z-index:25}
-  .mtab{flex:1;padding:12px 4px;text-align:center;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);cursor:pointer}
+  /* keep the design visible above the drawer */
+  body.drawer-open #stagewrap{align-items:flex-start;padding-top:6px}
+  #libgrid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}
+  #mobiletabs{display:flex;background:#141b15;border-top:1px solid #0d120e;z-index:35;position:relative}
+  .mtab{flex:1;padding:13px 4px;text-align:center;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);cursor:pointer}
   .mtab.on{color:var(--brass)}
-  #topbar{padding:6px 8px;gap:6px}
-  .tbtn{padding:6px 8px;font-size:11px}
+  #topbar{padding:6px 8px;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  #topbar::-webkit-scrollbar{display:none}
+  .tbtn{padding:7px 9px;font-size:11px;white-space:nowrap;flex:none}
   #brand span{display:none}
+  #brand b{font-size:14px}
+  input[type=range]{height:6px}
+  input[type=range]::-webkit-slider-thumb{width:22px;height:22px}
+  .swatches .s{width:32px;height:32px}
+  .toggle{width:42px;height:24px}
+  .toggle::after{width:20px;height:20px}
+  .toggle.on::after{left:20px}
+  .sbtn{padding:10px 4px;font-size:12px}
+  #hint{font-size:10px;max-width:92vw;white-space:normal;text-align:center}
+  #zoomctl{top:8px;right:8px}
 }
 @media (prefers-reduced-motion: reduce){
   *{transition:none!important;animation:none!important}
@@ -222,7 +246,7 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
 
   <div id="stagewrap">
     <div id="stageframe"><svg id="stage" xmlns="http://www.w3.org/2000/svg"></svg></div>
-    <div id="hint">Tap a flower in the library to add it · drag to arrange · scroll or pinch to size</div>
+    <div id="hint">Tap a flower to add it · drag to arrange · pinch or scroll to size · drag the gold handle to spin</div>
     <div id="zoomctl">
       <button class="zbtn" id="zin">+</button>
       <button class="zbtn" id="zout">−</button>
@@ -231,7 +255,7 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
 
   <div id="inspector">
     <div class="panel" id="selPanel">
-      <h3>Selected stem</h3>
+      <h3><span class="caret">▾</span>Selected stem</h3>
       <div id="emptyInsp">Nothing selected.<br>Tap any bloom on the stage to shape it.</div>
       <div id="selCtls" style="display:none">
         <div class="ctl"><label>Size <output id="oScale">100%</output></label>
@@ -256,7 +280,24 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
     </div>
 
     <div class="panel">
-      <h3>Vessel</h3>
+      <h3><span class="caret">▾</span>Lighting &amp; depth</h3>
+      <div class="ctl"><label>Brightness <output id="oLB">0</output></label>
+        <input type="range" id="rLB" min="-40" max="40" value="0"></div>
+      <div class="ctl"><label>Contrast <output id="oLC">100%</output></label>
+        <input type="range" id="rLC" min="60" max="150" value="100"></div>
+      <div class="ctl"><label>Saturation <output id="oLS">100%</output></label>
+        <input type="range" id="rLS" min="0" max="170" value="100"></div>
+      <div class="ctl"><label>Warmth <output id="oLW">0</output></label>
+        <input type="range" id="rLW" min="-30" max="30" value="0"></div>
+      <div class="ctl"><label>Depth shadow <output id="oLD">4</output></label>
+        <input type="range" id="rLD" min="0" max="14" value="4"></div>
+      <div class="ctl"><label>Light angle <output id="oLA">120°</output></label>
+        <input type="range" id="rLA" min="0" max="360" value="120"></div>
+      <div class="btnrow"><button class="sbtn" id="bLightReset">↺ Reset lighting</button></div>
+    </div>
+
+    <div class="panel">
+      <h3><span class="caret">▾</span>Vessel</h3>
       <div class="ctl"><label>Vase size <output id="oVScale">100%</output></label>
         <input type="range" id="rVScale" min="50" max="170" value="100"></div>
       <div class="ctl"><label>Vase tint <output id="oVHue">0°</output></label>
@@ -265,7 +306,14 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
     </div>
 
     <div class="panel">
-      <h3>Studio</h3>
+      <h3><span class="caret">▾</span>Table &amp; drape</h3>
+      <div class="checkrow">Table line <div class="toggle on" id="tTable"></div></div>
+      <div class="checkrow">Fabric drape <div class="toggle" id="tDrape"></div></div>
+      <div class="ctl"><label>Drape fabric</label><div class="swatches" id="drapeRow"></div></div>
+    </div>
+
+    <div class="panel">
+      <h3><span class="caret">▾</span>Studio</h3>
       <div class="ctl"><label>Backdrop</label>
         <div class="bgrow" id="bgRow"></div></div>
       <div class="ctl"><label>Custom backdrop</label>
@@ -273,7 +321,6 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
       <div class="checkrow">Draw stems <div class="toggle on" id="tStems"></div></div>
       <div class="checkrow">Soft shadow <div class="toggle on" id="tShadow"></div></div>
       <div class="checkrow">Vignette <div class="toggle on" id="tVignette"></div></div>
-      <div class="checkrow">Table line <div class="toggle on" id="tTable"></div></div>
     </div>
 
     <div id="countbar">0 stems on the bench</div>
@@ -702,6 +749,248 @@ species({id:"stock",name:"Stock",cat:"bloom",w:86,h:170,anchor:[43,162],
   return d+s;
  }});
 
+species({id:"hibiscus",name:"Hibiscus",cat:"bloom",w:110,h:106,anchor:[55,98],
+ variants:[
+  {name:"Tropic red",c:["#ff9078","#e8332e","#7e0c14"]},
+  {name:"Sunset",c:["#ffd083","#f8842b","#b13a0c"]},
+  {name:"Pink lady",c:["#ffd0e0","#f2649e","#a31a5c"]},
+  {name:"Yellow eye",c:["#fff1a8","#f8c732","#bc6e10"]},
+  {name:"White wing",c:["#ffffff","#f5ecdc","#c8627a"]}],
+ draw(u,c){
+  let d=`<defs>${RG(u+"p",ST(0,c[2])+ST(28,c[1])+ST(100,c[0]),55,53,52)}${RG(u+"e",ST(0,"#5e0a18")+ST(100,c[2]),55,53,18)}</defs>`,s="";
+  for(let i=0;i<5;i++){
+    s+=G(i*72+18,55,53,`<path d="${broad(46,28)}" transform="translate(55 96)" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".3" stroke-width=".8"/>`);
+    // crinkle veins
+    s+=G(i*72+18,55,53,`<path d="M55,92 L55,62 M55,86 L47,66 M55,86 L63,66" stroke="${c[2]}" stroke-width=".9" opacity=".4" fill="none"/>`);
+  }
+  s+=`<circle cx="55" cy="53" r="13" fill="url(#${u}e)" opacity=".9"/>`;
+  // staminal column reaching up-right
+  s+=`<path d="M55,53 C62,44 70,36 76,28" stroke="#f3c6cf" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+      <path d="M55,53 C62,44 70,36 76,28" stroke="${c[1]}" stroke-width="1.4" fill="none" opacity=".5"/>`;
+  const R=rnd(11);
+  for(let k=0;k<10;k++){const t=.45+R()*.5,x=55+(76-55)*t+(R()-.5)*7,y=53+(28-53)*t+(R()-.5)*7;
+    s+=`<circle cx="${x}" cy="${y}" r="${1.5+R()*.9}" fill="#ffd84e"/>`}
+  for(let k=0;k<5;k++){const a=k*72*Math.PI/180;
+    s+=`<circle cx="${76+Math.cos(a)*4.6}" cy="${28+Math.sin(a)*4.6}" r="2" fill="#e0476b"/>`}
+  return d+s;
+ }});
+
+species({id:"sprayrose",name:"Spray rose",cat:"bloom",w:108,h:114,anchor:[54,106],
+ variants:[
+  {name:"Golden mimi",c:["#ffeaa6","#f6c33e","#c08416"]},
+  {name:"Blush bubbles",c:["#ffe2e6","#f6b0bc","#ce7387"]},
+  {name:"Hot majolica",c:["#ff9cc4","#ec4a8c","#a01355"]},
+  {name:"Snowflake",c:["#ffffff","#f3eedf","#c8c0a0"]},
+  {name:"Peach babe",c:["#ffe0c4","#f8ab74","#cb6e34"]}],
+ draw(u,c){
+  let d=`<defs>${RG(u+"p",ST(0,c[2])+ST(50,c[1])+ST(100,c[0]),50,50,30)}</defs>`;
+  const head=(cx,cy,r)=>{let s="";
+    for(let i=0;i<7;i++)s+=G(i*51+10,cx,cy,`<path d="${tear(r,r*.46)}" transform="translate(${cx} ${cy+r*.9})" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".28" stroke-width=".6"/>`);
+    for(let i=0;i<5;i++)s+=G(i*72+40,cx,cy,`<path d="${tear(r*.62,r*.32)}" transform="translate(${cx} ${cy+r*.62})" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".3" stroke-width=".5"/>`);
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r*.22}" fill="${c[2]}" opacity=".75"/>`;return s};
+  const bud=(cx,cy,r,a)=>G(a,cx,cy,`<path d="${tear(r*1.7,r*.8)}" transform="translate(${cx} ${cy+r})" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".3" stroke-width=".6"/>
+    <path d="M${cx},${cy+r} l${-r*.5},${r*.9} M${cx},${cy+r} l${r*.5},${r*.9}" stroke="#5f7d3a" stroke-width="1.6" fill="none"/>`);
+  let s=`<path d="M54,104 C50,84 38,66 30,52 M54,104 C56,82 62,64 78,46 M54,104 C52,88 50,78 52,66" stroke="#5f7d3a" stroke-width="2.4" fill="none"/>`;
+  s+=bud(86,38,7,30)+head(30,46,15)+head(76,52,13)+head(50,58,17);
+  return d+s;
+ }});
+
+species({id:"camellia",name:"Camellia",cat:"bloom",w:98,h:98,anchor:[49,91],
+ variants:[
+  {name:"Pink perfection",c:["#ffd9e4","#f5a8c0","#cf6f93"]},
+  {name:"Crimson queen",c:["#f57a78","#cb2433","#6e0a18"]},
+  {name:"Alba",c:["#ffffff","#f4efe1","#cabd9c"]},
+  {name:"Peony blush",c:["#ffe6da","#f7bda4","#cd8268"]}],
+ draw(u,c){
+  let d=`<defs>${RG(u+"p",ST(0,c[2])+ST(52,c[1])+ST(100,c[0]),49,49,52)}</defs>`,s="";
+  // formal double: very ordered concentric rings
+  const rings=[[10,34,84,0],[10,27,76,18],[9,21,69,5],[8,15,62,25],[7,10,56,12]];
+  rings.forEach(r=>{for(let i=0;i<r[0];i++)
+    s+=G(i*(360/r[0])+r[3],49,49,`<path d="${broad(r[1],r[1]*.52)}" transform="translate(49 ${r[2]})" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".26" stroke-width=".55"/>`)});
+  s+=`<circle cx="49" cy="49" r="4.4" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".4" stroke-width=".6"/>`;
+  return d+s;
+ }});
+
+species({id:"magnolia",name:"Magnolia",cat:"bloom",w:106,h:104,anchor:[53,96],
+ variants:[
+  {name:"Saucer",c:["#fdeef2","#ecbed0","#b86a92"]},
+  {name:"Pure white",c:["#ffffff","#f6f1e3","#cec19e"]},
+  {name:"Royal purple",c:["#e8c2dd","#bb6ba4","#742a64"]},
+  {name:"Butter cup",c:["#fdf3c8","#efd784","#bd9c3c"]}],
+ draw(u,c){
+  let d=`<defs>${LG(u+"p",ST(0,c[0])+ST(70,c[1])+ST(100,c[2]),0,10,0,96)}${RG(u+"q",ST(0,c[2])+ST(60,c[1])+ST(100,c[0]),53,52,40)}</defs>`,s="";
+  for(let i=0;i<6;i++)
+    s+=G(i*60+30,53,52,`<path d="${broad(44,20)}" transform="translate(53 94)" fill="url(#${u}q)" stroke="${c[2]}" stroke-opacity=".3" stroke-width=".8"/>`);
+  for(let i=0;i<3;i++)
+    s+=G(i*120,53,52,`<path d="${broad(34,17)}" transform="translate(53 84)" fill="url(#${u}q)" stroke="${c[2]}" stroke-opacity=".3" stroke-width=".7"/>`);
+  // central cone of carpels
+  s+=`<ellipse cx="53" cy="50" rx="7" ry="10" fill="#cfe09a" stroke="#8aa14e" stroke-width=".8"/>`;
+  const R=rnd(5);for(let k=0;k<14;k++)s+=`<circle cx="${53+(R()-.5)*10}" cy="${50+(R()-.5)*15}" r="1.1" fill="#8aa14e"/>`;
+  return d+s;
+ }});
+
+species({id:"poppy",name:"Iceland poppy",cat:"bloom",w:96,h:96,anchor:[48,88],
+ variants:[
+  {name:"Tangerine",c:["#ffd388","#f8941f","#b8540a"]},
+  {name:"Lemon chiffon",c:["#fff6c4","#f6d84e","#bd9c1e"]},
+  {name:"White satin",c:["#ffffff","#f4efe0","#c6bd9c"]},
+  {name:"Coral haze",c:["#ffc6b0","#f57a55","#bb3c20"]},
+  {name:"Scarlet",c:["#ff8e80","#e23a30","#8a0e0e"]}],
+ draw(u,c){
+  const R=rnd(9);
+  let d=`<defs>${RG(u+"p",ST(0,c[2])+ST(40,c[1])+ST(100,c[0]),48,48,46)}</defs>`,s="";
+  for(let i=0;i<4;i++){
+    const j=(R()-.5)*10;
+    s+=G(i*90+22+j,48,48,`<path d="${broad(40,30)}" transform="translate(48 86) rotate(${(R()-.5)*8})" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".25" stroke-width=".7"/>`);
+    // crinkle texture
+    s+=G(i*90+22+j,48,48,`<path d="M48,82 C46,70 47,60 48,54 M42,78 C41,70 42,63 44,57 M54,78 C55,70 54,63 52,57" stroke="${c[2]}" stroke-width=".6" opacity=".35" fill="none"/>`);
+  }
+  s+=`<circle cx="48" cy="48" r="6.6" fill="#5c6e2e"/><circle cx="48" cy="48" r="6.6" fill="none" stroke="#3c4a1c" stroke-width="1" opacity=".7"/>`;
+  for(let k=0;k<16;k++){const a=k*22.5*Math.PI/180;
+    s+=`<line x1="${48+Math.cos(a)*8}" y1="${48+Math.sin(a)*8}" x2="${48+Math.cos(a)*12.5}" y2="${48+Math.sin(a)*12.5}" stroke="#2e2a18" stroke-width="1.2"/>
+        <circle cx="${48+Math.cos(a)*13.5}" cy="${48+Math.sin(a)*13.5}" r="1.2" fill="#3c361e"/>`}
+  return d+s;
+ }});
+
+species({id:"cosmos",name:"Cosmos",cat:"bloom",w:92,h:92,anchor:[46,84],
+ variants:[
+  {name:"Pink daydream",c:["#ffd9ea","#f5a0c6","#c45e8e"]},
+  {name:"White sonata",c:["#ffffff","#f3eee0","#c5bd9d"]},
+  {name:"Magenta",c:["#ff9ccc","#e8459b","#971458"]},
+  {name:"Chocolate",c:["#a85a52","#6e2620","#36100c"]}],
+ draw(u,c){
+  let d=`<defs>${RG(u+"p",ST(0,c[2])+ST(35,c[1])+ST(100,c[0]),46,46,42)}</defs>`,s="";
+  for(let i=0;i<8;i++)
+    s+=G(i*45,46,46,`<path d="M0,0 C-9,-8 -10,-26 -7,-34 L-3,-31 L0,-35 L3,-31 L7,-34 C10,-26 9,-8 0,0 Z" transform="translate(46 82)" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".3" stroke-width=".6"/>`);
+  s+=`<circle cx="46" cy="46" r="7.4" fill="#f3b81e"/>`;
+  const R=rnd(3);for(let k=0;k<18;k++){const a=R()*6.28,r=R()*6;
+    s+=`<circle cx="${46+Math.cos(a)*r}" cy="${46+Math.sin(a)*r}" r=".95" fill="#b87708"/>`}
+  return d+s;
+ }});
+
+species({id:"iris",name:"Bearded iris",cat:"bloom",w:96,h:158,anchor:[48,150],
+ variants:[
+  {name:"Royal purple",c:["#d4b4ee","#8e4cc4","#481a7c"]},
+  {name:"Dutch blue",c:["#bcd0f5","#5f7fd4","#27408e"]},
+  {name:"White swan",c:["#ffffff","#f2eee2","#c4bda0"]},
+  {name:"Lemon beard",c:["#fff3b2","#f3d345","#bd961c"]}],
+ draw(u,c){
+  let d=`<defs>${RG(u+"p",ST(0,c[2])+ST(45,c[1])+ST(100,c[0]),48,40,46)}</defs>`;
+  let s=`<path d="M48,150 L48,66" stroke="#5f7d3a" stroke-width="3.4"/>
+   <path d="M48,118 C58,108 62,96 60,84" stroke="#5f7d3a" stroke-width="2.4" fill="none"/>`;
+  // three falls drooping
+  for(let i=0;i<3;i++)
+    s+=G(i*120+60,48,44,`<path d="M48,44 C38,48 30,58 32,72 C33,80 40,84 48,80 C56,84 63,80 64,72 C66,58 58,48 48,44 Z" transform="rotate(180 48 62)" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".35" stroke-width=".8"/>
+    <path d="M48,62 L48,78" stroke="#f3c43e" stroke-width="3.6" stroke-linecap="round" transform="rotate(180 48 62)"/>`);
+  // three standards upright
+  for(let i=0;i<3;i++)
+    s+=G(i*120,48,44,`<path d="${broad(30,14)}" transform="translate(48 44)" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".3" stroke-width=".7"/>`);
+  s+=`<circle cx="48" cy="44" r="4" fill="${c[1]}" stroke="${c[2]}" stroke-width=".8"/>`;
+  return d+s;
+ }});
+
+species({id:"freesia",name:"Freesia",cat:"bloom",w:110,h:150,anchor:[55,144],
+ variants:[
+  {name:"Golden",c:["#fff0a0","#f6c92e","#bd8a10"]},
+  {name:"White",c:["#ffffff","#f2eddc","#c2b996"]},
+  {name:"Pink",c:["#ffd8e2","#f29ab8","#bd5a82"]},
+  {name:"Violet",c:["#e4ccf2","#b078d2","#6c3698"]}],
+ draw(u,c){
+  let d=`<defs>${RG(u+"p",ST(0,c[2])+ST(48,c[1])+ST(100,c[0]),50,50,26)}</defs>`;
+  let s=`<path d="M55,144 C50,110 44,82 30,58 C26,50 24,44 26,36" stroke="#5f7d3a" stroke-width="2.8" fill="none"/>`;
+  // trumpets along the arch, opening upward
+  const pts=[[30,58,0],[38,74,1],[47,92,1],[26,36,0]];
+  const trump=(x,y,big,a)=>{let t="";const r=big?11:8;
+    for(let i=0;i<6;i++)t+=G(i*60+a,x,y,`<path d="${tear(r*1.5,r*.62)}" transform="translate(${x} ${y+r*1.2})" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".3" stroke-width=".6"/>`);
+    t+=`<circle cx="${x}" cy="${y}" r="${r*.32}" fill="#f3c43e"/>`;return t};
+  s+=trump(47,92,1,10)+trump(38,74,1,40)+trump(30,58,0,0);
+  // closed buds at the tip
+  s+=`<g><ellipse cx="26" cy="36" rx="4.6" ry="8" transform="rotate(-20 26 36)" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".35" stroke-width=".6"/>
+   <ellipse cx="34" cy="28" rx="3.6" ry="6.4" transform="rotate(8 34 28)" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".35" stroke-width=".6"/>
+   <ellipse cx="43" cy="24" rx="2.8" ry="5" transform="rotate(24 43 24)" fill="#a8c168" stroke="#6c8a36" stroke-width=".6"/></g>`;
+  return d+s;
+ }});
+
+species({id:"lisianthus",name:"Lisianthus",cat:"bloom",w:100,h:108,anchor:[50,100],
+ variants:[
+  {name:"Champagne",c:["#fdf2dc","#ecd4ac","#bd9a66"]},
+  {name:"Lavender mist",c:["#ead8f4","#bf94d8","#7e54a4"]},
+  {name:"Rosita pink",c:["#ffdce8","#f2a4c2","#c2638e"]},
+  {name:"Pure white",c:["#ffffff","#f4efe2","#c9c0a0"]},
+  {name:"Blue picotee",c:["#f0eafa","#cab4e4","#6648a0"]}],
+ draw(u,c){
+  const R=rnd(13);
+  let d=`<defs>${RG(u+"p",ST(0,c[2])+ST(55,c[1])+ST(100,c[0]),50,48,44)}</defs>`,s="";
+  // loose ruffled double
+  for(let ring=0;ring<3;ring++){const n=7-ring,len=40-ring*10,base=86-ring*10;
+    for(let i=0;i<n;i++)s+=G(i*(360/n)+ring*26+(R()-.5)*8,50,48,`<path d="${broad(len,len*.56)}" transform="translate(50 ${base}) rotate(${(R()-.5)*10})" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".24" stroke-width=".6"/>`)}
+  // swirled center
+  s+=`<path d="M50,48 m-7,0 a7,7 0 1,1 14,0 a5.4,5.4 0 1,0 -10.8,0 a4,4 0 1,1 8,0" fill="none" stroke="${c[2]}" stroke-width="1.5" stroke-linecap="round" opacity=".75"/>`;
+  // side bud
+  s+=`<g transform="rotate(24 50 100)"><path d="M50,100 L72,58" stroke="#5f7d3a" stroke-width="2.2"/>
+   <ellipse cx="72" cy="52" rx="6" ry="10" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".35" stroke-width=".6"/>
+   <path d="M68,58 Q72,48 76,58" fill="none" stroke="#6c8a36" stroke-width="1.4"/></g>`;
+  return d+s;
+ }});
+
+species({id:"marigold",name:"Marigold",cat:"bloom",w:92,h:92,anchor:[46,86],
+ variants:[
+  {name:"Deep orange",c:["#ffb84e","#f07c12","#a84606"]},
+  {name:"Sun gold",c:["#ffe478","#f6b81c","#bb7d08"]},
+  {name:"Rust crown",c:["#f59a4a","#c45c14","#6e2c04"]}],
+ draw(u,c){
+  let d=`<defs>${RG(u+"p",ST(0,c[2])+ST(58,c[1])+ST(100,c[0]),46,46,42)}</defs>`,s="";
+  // dense frilled rings
+  for(let ring=0;ring<6;ring++){
+    const n=16-ring*2,r=38-ring*6;
+    for(let i=0;i<n;i++){const a=i*(360/n)+ring*14;
+      s+=G(a,46,46,`<path d="M0,0 L-4.5,-${r*.42} L-2,-${r*.5} L0,-${r*.44} L2,-${r*.5} L4.5,-${r*.42} Z" transform="translate(46 ${46+r*.52})" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".3" stroke-width=".5"/>`)}
+  }
+  s+=`<circle cx="46" cy="46" r="5" fill="${c[1]}"/><circle cx="46" cy="46" r="2.4" fill="${c[2]}"/>`;
+  return d+s;
+ }});
+
+species({id:"sweetpea",name:"Sweet pea",cat:"bloom",w:100,h:140,anchor:[50,134],
+ variants:[
+  {name:"Mauve",c:["#ecd4ec","#c894c8","#8a548a"]},
+  {name:"Ripple pink",c:["#ffd8e6","#f0a0c0","#c05e8a"]},
+  {name:"Periwinkle",c:["#d8def6","#9aa6e0","#5662a8"]},
+  {name:"Cream ruffle",c:["#fff8e4","#f2e2b8","#c0a86e"]}],
+ draw(u,c){
+  let d=`<defs>${RG(u+"p",ST(0,c[2])+ST(50,c[1])+ST(100,c[0]),50,50,30)}</defs>`;
+  let s=`<path d="M50,134 C48,108 44,84 38,64 M50,134 C54,104 60,86 66,72 M50,134 C50,116 49,104 46,94" stroke="#5f7d3a" stroke-width="2" fill="none"/>`;
+  const fl=(x,y,sc,a)=>G(a,x,y,`<g transform="translate(${x} ${y}) scale(${sc})">
+    <path d="M0,2 C-13,-2 -16,-14 -10,-20 C-4,-25 6,-24 10,-18 C15,-12 11,-2 0,2 Z" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".32" stroke-width=".8"/>
+    <path d="M0,3 C-8,2 -10,-5 -6,-9 C-2,-12 4,-11 6,-7 C8,-3 6,2 0,3 Z" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".4" stroke-width=".7"/>
+    <path d="M-2,4 C-4,0 -2,-4 1,-4 C4,-4 5,0 3,4 Z" fill="${c[2]}" opacity=".55"/></g>`);
+  s+=fl(38,62,1.15,-14)+fl(66,70,1,18)+fl(46,92,.92,-4);
+  // tendril
+  s+=`<path d="M58,84 C70,76 76,68 72,60 C70,56 64,57 65,62 C66,66 71,65 72,61" stroke="#6c8a36" stroke-width="1.2" fill="none"/>`;
+  return d+s;
+ }});
+
+species({id:"hellebore",name:"Hellebore",cat:"bloom",w:96,h:96,anchor:[48,88],
+ variants:[
+  {name:"Dusty rose",c:["#ecd2da","#c799ac","#8a5a72"]},
+  {name:"Ivory green",c:["#f8f6e4","#e2e0bc","#a4a878"]},
+  {name:"Slate plum",c:["#c0a8c4","#7e5e8a","#422c50"]},
+  {name:"Speckled blush",c:["#fae8ec","#e8becb","#b07a90"]}],
+ draw(u,c){
+  const R=rnd(17);
+  let d=`<defs>${RG(u+"p",ST(0,c[2])+ST(46,c[1])+ST(100,c[0]),48,48,42)}</defs>`,s="";
+  for(let i=0;i<5;i++)
+    s+=G(i*72+36,48,48,`<path d="${broad(38,24)}" transform="translate(48 84)" fill="url(#${u}p)" stroke="${c[2]}" stroke-opacity=".3" stroke-width=".7"/>`);
+  // speckles
+  for(let k=0;k<26;k++){const a=R()*6.28,r=8+R()*22;
+    s+=`<circle cx="${48+Math.cos(a)*r}" cy="${48+Math.sin(a)*r*.92}" r="${.7+R()*.5}" fill="${c[2]}" opacity=".5"/>`}
+  // nectaries + stamens
+  s+=`<circle cx="48" cy="48" r="6" fill="#dde4ae" stroke="#9aa860" stroke-width=".7"/>`;
+  for(let k=0;k<11;k++){const a=k*32.7*Math.PI/180;
+    s+=`<line x1="48" y1="48" x2="${48+Math.cos(a)*9.5}" y2="${48+Math.sin(a)*9.5}" stroke="#e8e0b0" stroke-width=".9"/>
+        <circle cx="${48+Math.cos(a)*10.2}" cy="${48+Math.sin(a)*10.2}" r="1.1" fill="#cfa83c"/>`}
+  return d+s;
+ }});
+
 /* ============== GREENERY ============== */
 
 species({id:"fern",name:"Sword fern",cat:"green",w:110,h:180,anchor:[55,172],
@@ -1116,15 +1405,22 @@ const state={
   items:[],            // {uid,sp,vi,x,y,s,r,flip,hue}
   vase:{id:"hourglass",scale:1,hue:0,show:true},
   bg:"#f5f1e8",
-  stems:true,shadow:true,vignette:true,table:true
+  stems:true,shadow:true,vignette:true,table:true,
+  light:{b:0,c:100,s:100,w:0,d:4,a:120},   // brightness, contrast, saturation, warmth, depth, light angle
+  drape:{on:false,ci:0}
 };
 let SEL=null,UIDC=1,history=[],future=[];
 const byId=id=>SPECIES.find(s=>s.id===id);
 const vById=id=>VASES.find(v=>v.id===id);
 
 function snapshot(){history.push(JSON.stringify(state));if(history.length>60)history.shift();future.length=0;syncTB()}
-function undo(){if(!history.length)return;future.push(JSON.stringify(state));Object.assign(state,JSON.parse(history.pop()));SEL=null;render();syncInsp();syncTB()}
-function redo(){if(!future.length)return;history.push(JSON.stringify(state));Object.assign(state,JSON.parse(future.pop()));SEL=null;render();syncInsp();syncTB()}
+function normalize(){state.light=Object.assign({...LIGHT_DEF},state.light||{});state.drape=Object.assign({on:false,ci:0},state.drape||{})}
+function syncStudioUI(){syncLight();syncDrape();
+  $("tVase").classList.toggle("on",state.vase.show);
+  $("tStems").classList.toggle("on",state.stems);$("tShadow").classList.toggle("on",state.shadow);
+  $("tVignette").classList.toggle("on",state.vignette);$("tTable").classList.toggle("on",state.table)}
+function undo(){if(!history.length)return;future.push(JSON.stringify(state));Object.assign(state,JSON.parse(history.pop()));normalize();SEL=null;render();syncInsp();syncTB();syncStudioUI()}
+function redo(){if(!future.length)return;history.push(JSON.stringify(state));Object.assign(state,JSON.parse(future.pop()));normalize();SEL=null;render();syncInsp();syncTB();syncStudioUI()}
 function syncTB(){btnUndo.disabled=!history.length;btnRedo.disabled=!future.length;
   document.getElementById("countbar").textContent=`${state.items.length} stem${state.items.length===1?"":"s"} on the bench`}
 
@@ -1142,10 +1438,63 @@ function vaseGeom(){const v=vById(state.vase.id),vs=state.vase.scale;
 /* ---------- render ---------- */
 function bgLayer(){
   let s=`<rect width="${CW}" height="${CH}" fill="${state.bg}"/>`;
-  if(state.table)s+=`<rect x="0" y="${TABLE_Y}" width="${CW}" height="${CH-TABLE_Y}" fill="rgba(0,0,0,.07)"/>
+  if(state.table&&!state.drape.on)s+=`<rect x="0" y="${TABLE_Y}" width="${CW}" height="${CH-TABLE_Y}" fill="rgba(0,0,0,.07)"/>
     <line x1="0" y1="${TABLE_Y}" x2="${CW}" y2="${TABLE_Y}" stroke="rgba(0,0,0,.16)" stroke-width="1.4"/>`;
-  if(state.vignette)s+=`<rect width="${CW}" height="${CH}" fill="url(#vign)" pointer-events="none"/>`;
   return s}
+function vignetteLayer(){
+  return state.vignette?`<rect width="${CW}" height="${CH}" fill="url(#vign)" pointer-events="none"/>`:""}
+
+/* ---------- table drape ---------- */
+const DRAPES=[
+ {name:"Linen",c:["#f6f0e2","#e6dcc6","#b9ab8c"]},
+ {name:"White cotton",c:["#ffffff","#f0eee8","#c6c2b8"]},
+ {name:"Blush",c:["#fbe5e5","#efc5c8","#bd8a90"]},
+ {name:"Sage",c:["#e4ebdc","#c5d1b6","#8c9d7b"]},
+ {name:"Dusty blue",c:["#dfe8f0","#bccbdc","#7e97ae"]},
+ {name:"Navy velvet",c:["#425470","#2b3b56","#141f36"]},
+ {name:"Burgundy",c:["#84354a","#5e1e30","#360e1b"]},
+ {name:"Charcoal",c:["#4e5356","#363a3d","#1d2022"]},
+ {name:"Gold silk",c:["#f3dfae","#dfc07c","#a8853f"]}];
+function drapeLayer(){
+  if(!state.drape.on)return"";
+  const c=DRAPES[state.drape.ci]?.c||DRAPES[0].c, R=rnd(41);
+  // cloth body with a gently sagging top edge
+  let top=`M0,${TABLE_Y+7}`;const seg=6;
+  for(let i=0;i<seg;i++){const x0=(i/seg)*CW,x1=((i+1)/seg)*CW;
+    top+=` Q${(x0+x1)/2},${TABLE_Y+(i%2? -1:11)} ${x1},${TABLE_Y+6}`}
+  let folds="";
+  for(let i=0;i<=10;i++){
+    const x=(i/10)*CW+(R()-.5)*26, sway=(R()-.5)*44, w=12+R()*22;
+    folds+=`<path d="M${x},${TABLE_Y+4} C${x+sway*.3},${TABLE_Y+26} ${x+sway},${CH-16} ${x+sway},${CH}" stroke="${c[2]}" stroke-width="${w}" fill="none" opacity=".18"/>
+    <path d="M${x+w*.55},${TABLE_Y+6} C${x+w*.55+sway*.3},${TABLE_Y+28} ${x+w*.55+sway},${CH-14} ${x+w*.55+sway},${CH}" stroke="${c[0]}" stroke-width="${w*.4}" fill="none" opacity=".35"/>`;
+  }
+  return `<defs>${LG("drB",ST(0,c[0])+ST(42,c[1])+ST(100,c[2]),0,TABLE_Y,0,CH)}
+    <clipPath id="drClip"><path d="${top} L${CW},${CH} L0,${CH} Z"/></clipPath></defs>
+  <g><path d="${top} L${CW},${CH} L0,${CH} Z" fill="url(#drB)"/>
+  <g clip-path="url(#drClip)">${folds}</g>
+  <path d="${top}" stroke="${c[0]}" stroke-width="2.2" fill="none" opacity=".85"/>
+  <path d="${top}" stroke="${c[2]}" stroke-width="1" fill="none" opacity=".35" transform="translate(0 2.5)"/></g>`;
+}
+
+/* ---------- lighting grade + depth shadows ---------- */
+function gradeFilter(){
+  const L=state.light,k=L.c/100,b=L.b/100,w=L.w/100;
+  if(L.c===100&&L.b===0&&L.s===100&&L.w===0)return["",""];
+  const off=(1-k)/2;
+  const f=`<filter id="grade" x="-2%" y="-2%" width="104%" height="104%" color-interpolation-filters="sRGB">
+    <feColorMatrix type="saturate" values="${(L.s/100).toFixed(3)}"/>
+    <feComponentTransfer>
+      <feFuncR type="linear" slope="${k.toFixed(3)}" intercept="${(off+b+w*.45).toFixed(3)}"/>
+      <feFuncG type="linear" slope="${k.toFixed(3)}" intercept="${(off+b+w*.1).toFixed(3)}"/>
+      <feFuncB type="linear" slope="${k.toFixed(3)}" intercept="${(off+b-w*.45).toFixed(3)}"/>
+    </feComponentTransfer></filter>`;
+  return[f,` filter="url(#grade)"`]}
+function depthDef(){
+  const L=state.light;if(!L.d)return"";
+  const a=L.a*Math.PI/180,dx=(-Math.cos(a)*L.d).toFixed(1),dy=(Math.sin(a)*L.d).toFixed(1);
+  return `<filter id="depth" x="-25%" y="-25%" width="150%" height="150%">
+    <feDropShadow dx="${dx}" dy="${dy}" stdDeviation="${(L.d*.85).toFixed(1)}" flood-color="#191307" flood-opacity="0.32"/></filter>`}
+const depthAttr=()=>state.light.d?` filter="url(#depth)"`:"";
 
 function stemsLayer(){
   if(!state.stems)return "";
@@ -1159,7 +1508,7 @@ function stemsLayer(){
     <path d="M${ax},${ay} C${ax-bend},${c1y} ${mx+(ax-mx)*.25},${my-(my-ay)*.2} ${mx+(ax-mx)*.12},${my}" stroke="#5f7d3a" stroke-width="${w}" fill="none" stroke-linecap="round"/>
     <path d="M${mx+(ax-mx)*.12},${my} L${gx+(ax-mx)*.06},${gy}" stroke="#5f7d3a" stroke-width="${w}" fill="none" stroke-linecap="round" opacity=".5"/></g>`;
   });
-  return `<g id="stems">${s}</g>`}
+  return `<g id="stems"${depthAttr()}>${s}</g>`}
 
 function vaseLayers(){
   if(!state.vase.show)return["",""];
@@ -1177,27 +1526,35 @@ function itemNode(it){
   const sp=byId(it.sp),v=sp.variants[it.vi]||sp.variants[0];
   const filt=it.hue?` filter="url(#hue${it.uid})"`:"";
   const fdef=it.hue?`<filter id="hue${it.uid}"><feColorMatrix type="hueRotate" values="${it.hue}"/></filter>`:"";
-  return `${fdef}<g class="item" data-uid="${it.uid}" transform="${itemXform(it)}"${filt} style="cursor:grab">
+  return `${fdef}<g class="item" data-uid="${it.uid}" transform="${itemXform(it)}"${depthAttr()} style="cursor:grab">
     <rect x="0" y="0" width="${sp.w}" height="${sp.h}" fill="transparent"/>
-    ${sp.draw("i"+it.uid+"_",v.c)}</g>`}
+    <g${filt}>${sp.draw("i"+it.uid+"_",v.c)}</g></g>`}
 
 function selLayer(){
   if(SEL==null)return"";
   const it=state.items.find(i=>i.uid===SEL);if(!it)return"";
   const sp=byId(it.sp),rad=Math.max(sp.w,sp.h)*.56*it.s;
-  return `<g pointer-events="none"><circle cx="${it.x}" cy="${it.y}" r="${rad}" fill="none" stroke="#c09a52" stroke-width="2" stroke-dasharray="7 6" opacity=".95"/>
-    <circle cx="${it.x}" cy="${it.y}" r="${rad}" fill="none" stroke="rgba(0,0,0,.3)" stroke-width="4" stroke-dasharray="7 6" opacity=".25"/></g>`}
+  const ha=(it.r-90)*Math.PI/180,hr=rad+24;
+  const hx=it.x+Math.cos(ha)*hr,hy=it.y+Math.sin(ha)*hr;
+  const ex=it.x+Math.cos(ha)*rad,ey=it.y+Math.sin(ha)*rad;
+  return `<g id="selring"><g pointer-events="none">
+    <circle cx="${it.x}" cy="${it.y}" r="${rad}" fill="none" stroke="rgba(0,0,0,.3)" stroke-width="4" stroke-dasharray="7 6" opacity=".25"/>
+    <circle cx="${it.x}" cy="${it.y}" r="${rad}" fill="none" stroke="#c09a52" stroke-width="2" stroke-dasharray="7 6" opacity=".95"/>
+    <line x1="${ex}" y1="${ey}" x2="${hx}" y2="${hy}" stroke="#c09a52" stroke-width="2" opacity=".9"/></g>
+    <circle data-handle="rot" cx="${hx}" cy="${hy}" r="14" fill="#c09a52" stroke="#1b231c" stroke-width="2.5" style="cursor:grab"/>
+    <path pointer-events="none" d="M${hx-6},${hy} a6,6 0 1,1 3,5.2 M${hx-3.4},${hy+7.4} l-1,-3 l3.2,-.6" fill="none" stroke="#241a06" stroke-width="2" stroke-linecap="round"/></g>`}
 
 function render(){
-  const[vb,vf]=vaseLayers();
+  const[vb,vf]=vaseLayers(),[gf,ga]=gradeFilter();
   stage.innerHTML=`<defs>
     <radialGradient id="vign" cx="50%" cy="42%" r="75%"><stop offset="60%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(30,25,10,.16)"/></radialGradient>
     <filter id="blur8"><feGaussianBlur stdDeviation="8"/></filter>
+    ${gf}${depthDef()}
     ${state.vase.hue?`<filter id="hueV"><feColorMatrix type="hueRotate" values="${state.vase.hue}"/></filter>`:""}
   </defs>
-  ${bgLayer()}${shadowLayer()}${stemsLayer()}${vb}
+  <g${ga}>${bgLayer()}${drapeLayer()}${shadowLayer()}${stemsLayer()}${vb}
   <g id="items">${state.items.map(itemNode).join("")}</g>
-  ${vf}${selLayer()}`;
+  ${vf}</g>${vignetteLayer()}${selLayer()}`;
   fitStage();
 }
 function lightUpdate(){ // during drag: move node + rebuild stems & selection only
@@ -1227,13 +1584,26 @@ function evtPt(e){
 
 /* ---------- interactions ---------- */
 let drag=null,pinch=null;
+function refreshSel(){
+  const old=stage.querySelector("#selring");
+  const tmp=document.createElementNS("http://www.w3.org/2000/svg","g");tmp.innerHTML=selLayer();
+  if(old){if(tmp.firstChild)old.replaceWith(tmp.firstChild);else old.remove()}
+  else if(tmp.firstChild)stage.appendChild(tmp.firstChild);
+}
 stage.addEventListener("pointerdown",e=>{
-  const node=e.target.closest&&e.target.closest("[data-uid]");
+  const handle=e.target.closest&&e.target.closest("[data-handle]");
   const p=evtPt(e);
+  if(handle&&SEL!=null){
+    snapshot();
+    drag={mode:"rot",uid:SEL,moved:false};
+    stage.setPointerCapture(e.pointerId);
+    return;
+  }
+  const node=e.target.closest&&e.target.closest("[data-uid]");
   if(node){
     const uid=+node.dataset.uid,it=state.items.find(i=>i.uid===uid);
     SEL=uid;snapshot();
-    drag={uid,dx:p.x-it.x,dy:p.y-it.y,moved:false};
+    drag={mode:"move",uid,dx:p.x-it.x,dy:p.y-it.y,moved:false};
     stage.setPointerCapture(e.pointerId);
     render();syncInsp();
   }else{SEL=null;render();syncInsp()}
@@ -1242,12 +1612,18 @@ stage.addEventListener("pointermove",e=>{
   if(!drag)return;
   const it=state.items.find(i=>i.uid===drag.uid);if(!it)return;
   const p=evtPt(e);
-  it.x=Math.round(p.x-drag.dx);it.y=Math.round(p.y-drag.dy);drag.moved=true;
-  lightUpdate();
-  const sl=stage.lastElementChild; // refresh selection ring cheaply
+  if(drag.mode==="rot"){
+    let a=Math.atan2(p.y-it.y,p.x-it.x)*180/Math.PI+90;
+    a=((a+540)%360)-180;
+    if(e.shiftKey)a=Math.round(a/15)*15;
+    it.r=Math.round(a);drag.moved=true;
+    lightUpdate();
+  }else{
+    it.x=Math.round(p.x-drag.dx);it.y=Math.round(p.y-drag.dy);drag.moved=true;
+    lightUpdate();
+  }
   render._t&&cancelAnimationFrame(render._t);
-  render._t=requestAnimationFrame(()=>{const tmp=document.createElementNS("http://www.w3.org/2000/svg","g");tmp.innerHTML=selLayer();
-    if(stage.querySelector("g[pointer-events='none']"))stage.querySelector("g[pointer-events='none']").replaceWith(tmp.firstChild||tmp);});
+  render._t=requestAnimationFrame(()=>{refreshSel();if(drag&&drag.mode==="rot")syncInsp()});
 });
 stage.addEventListener("pointerup",e=>{
   if(drag&&!drag.moved)history.pop(),syncTB(); // selection-only click: drop snapshot
@@ -1297,7 +1673,8 @@ function addItem(spId,vi=0){
   if(sp.h>140)it.y-=40;
   state.items.push(it);SEL=it.uid;
   render();syncInsp();
-  const h=document.getElementById("hint");h.style.opacity=0;setTimeout(()=>h.remove(),600);
+  if(window.innerWidth<=880)setDrawer("stage"); // pop back to the design on phones
+  const h=document.getElementById("hint");if(h){h.style.opacity=0;setTimeout(()=>h.remove(),600)}
 }
 function removeSel(){const i=state.items.findIndex(x=>x.uid===SEL);if(i<0)return;
   snapshot();state.items.splice(i,1);SEL=null;render();syncInsp()}
@@ -1346,6 +1723,41 @@ function bindToggle(id,key){const t=$(id);t.onclick=()=>{snapshot();state[key]=!
 $("tVase").onclick=()=>{snapshot();state.vase.show=!state.vase.show;$("tVase").classList.toggle("on",state.vase.show);render()};
 bindToggle("tStems","stems");bindToggle("tShadow","shadow");bindToggle("tVignette","vignette");bindToggle("tTable","table");
 
+/* lighting & depth */
+const LIGHT_DEF={b:0,c:100,s:100,w:0,d:4,a:120};
+function bindLight(rid,oid,key,fmt){
+  $(rid).oninput=e=>{state.light[key]=+e.target.value;$(oid).textContent=fmt(e.target.value);render()};
+  $(rid).onpointerdown=()=>snapshot();
+}
+bindLight("rLB","oLB","b",v=>v);
+bindLight("rLC","oLC","c",v=>v+"%");
+bindLight("rLS","oLS","s",v=>v+"%");
+bindLight("rLW","oLW","w",v=>v);
+bindLight("rLD","oLD","d",v=>v);
+bindLight("rLA","oLA","a",v=>v+"°");
+function syncLight(){const L=state.light;
+  $("rLB").value=L.b;$("oLB").textContent=L.b;
+  $("rLC").value=L.c;$("oLC").textContent=L.c+"%";
+  $("rLS").value=L.s;$("oLS").textContent=L.s+"%";
+  $("rLW").value=L.w;$("oLW").textContent=L.w;
+  $("rLD").value=L.d;$("oLD").textContent=L.d;
+  $("rLA").value=L.a;$("oLA").textContent=L.a+"°"}
+$("bLightReset").onclick=()=>{snapshot();state.light={...LIGHT_DEF};syncLight();render()};
+
+/* table drape */
+$("tDrape").onclick=()=>{snapshot();state.drape.on=!state.drape.on;syncDrape();render()};
+const drapeRow=$("drapeRow");
+DRAPES.forEach((dr,ci)=>{const b=document.createElement("div");b.className="s";
+  b.style.background=`linear-gradient(150deg, ${dr.c[0]}, ${dr.c[1]} 55%, ${dr.c[2]})`;b.title=dr.name;
+  b.onclick=()=>{snapshot();state.drape.ci=ci;if(!state.drape.on)state.drape.on=true;syncDrape();render()};
+  drapeRow.appendChild(b)});
+function syncDrape(){$("tDrape").classList.toggle("on",state.drape.on);
+  [...drapeRow.children].forEach((x,i)=>x.classList.toggle("on",i===state.drape.ci&&state.drape.on))}
+syncDrape();
+
+/* collapsible panels */
+document.querySelectorAll(".panel h3").forEach(h=>h.addEventListener("click",()=>h.parentElement.classList.toggle("closed")));
+
 /* backdrop */
 const BGS=["#f5f1e8","#ffffff","#f7e8e6","#e9efe2","#e3edf5","#efe6f3","#dcd6c8","#5c6670","#33383e","#1d2126"];
 const bgRow=$("bgRow");
@@ -1392,40 +1804,108 @@ const btnUndo=$("btnUndo"),btnRedo=$("btnRedo");
 btnUndo.onclick=undo;btnRedo.onclick=redo;
 $("btnClear").onclick=()=>{if(!state.items.length)return;snapshot();state.items=[];SEL=null;render();syncInsp()};
 
-$("btnRandom").onclick=()=>{
-  snapshot();state.items=[];SEL=null;
+/* ---------- elegant recipe composer ---------- */
+const RECIPES=[
+ {name:"Blush romance",vase:"urn",bg:"#f7ece9",
+  greens:[["eucalyptus",0,2],["willoweuc",0,2]],
+  focals:[["gardenrose",0,3],["peony",0,2],["rose",2,3],["ranunculus",1,2]],
+  accents:[["lisianthus",0,2],["sprayrose",1,2]],
+  fills:[["babysbreath",1,2],["astilbe",0,1]]},
+ {name:"Ivory & sage",vase:"cylinder",bg:"#ffffff",
+  greens:[["olive",0,2],["ruscus",0,1],["eucalyptus",0,1]],
+  focals:[["rose",3,3],["lily",2,2],["ranunculus",3,2],["hellebore",1,2]],
+  accents:[["lisianthus",3,2],["calla",0,2]],
+  fills:[["queenanne",0,2],["berry",2,1]]},
+ {name:"Jewel box",vase:"urn",bg:"#2d3038",drape:6,
+  greens:[["leatherleaf",0,2],["ruscus",1,1]],
+  focals:[["dahlia",3,2],["rose",1,3],["anemone",1,2],["peony",3,1]],
+  accents:[["zinnia",3,1],["carnation",4,2]],
+  fills:[["thistle",0,2],["berry",0,2]]},
+ {name:"Sunset terrace",vase:"pitcher",bg:"#fdf3e3",
+  greens:[["fern",0,2],["olive",0,1]],
+  focals:[["hibiscus",1,2],["rose",6,2],["lily",0,2],["marigold",0,2]],
+  accents:[["alstroemeria",1,2],["poppy",0,2]],
+  fills:[["billy",0,2],["statice",1,1]]},
+ {name:"Lavender haze",vase:"hourglass",bg:"#efeaf5",
+  greens:[["willoweuc",0,2],["eucalyptus",0,1]],
+  focals:[["delphinium",2,2],["stock",0,2],["rose",5,2],["lisianthus",1,2]],
+  accents:[["iris",0,1],["sweetpea",0,2]],
+  fills:[["lavender",0,2],["statice",0,1],["waxflower",2,1]]},
+ {name:"Island tropic",vase:"cube",bg:"#eef6f0",
+  greens:[["monstera",0,2],["fern",1,1]],
+  focals:[["hibiscus",0,2],["protea",0,1],["orchid",1,2],["calla",1,2]],
+  accents:[["freesia",0,2],["zinnia",1,1]],
+  fills:[["billy",0,1],["berry",1,1]]},
+ {name:"Cottage garden",vase:"mason",bg:"#f6f3e7",
+  greens:[["ruscus",0,1],["ivy",0,1],["fern",0,1]],
+  focals:[["cosmos",0,3],["daisy",0,2],["snapdragon",0,2],["poppy",1,2]],
+  accents:[["sweetpea",1,2],["freesia",2,1]],
+  fills:[["waxflower",1,2],["queenanne",0,1]]},
+ {name:"Autumn harvest",vase:"basket",bg:"#f2ead8",drape:8,
+  greens:[["olive",0,2],["leatherleaf",0,1]],
+  focals:[["sunflower",0,2],["chrys",3,2],["dahlia",0,2],["marigold",2,2]],
+  accents:[["rose",4,2],["camellia",3,1]],
+  fills:[["berry",0,2],["astilbe",1,1]]},
+ {name:"White wedding",vase:"none_",bg:"#f3f1ec",
+  greens:[["eucalyptus",0,2],["ruscus",0,1]],
+  focals:[["peony",2,3],["rose",3,2],["magnolia",1,1],["camellia",2,2]],
+  accents:[["freesia",1,2],["sprayrose",3,2]],
+  fills:[["babysbreath",0,2],["queenanne",0,1]]},
+ {name:"French blue",vase:"bottle",bg:"#f0f3f6",
+  greens:[["willoweuc",0,2],["eucalyptus",1,1]],
+  focals:[["hydrangea",1,2],["delphinium",0,2],["iris",1,2],["anemone",2,2]],
+  accents:[["tulip",4,2],["sweetpea",2,2]],
+  fills:[["thistle",0,2],["queenanne",0,1]]}];
+let lastRecipe=-1;
+function composeRecipe(rec){
   const R=Math.random;
-  state.vase.id=VASES[Math.floor(R()*(VASES.length-1))].id;
-  const greens=SPECIES.filter(s=>s.cat==="green"),blooms=SPECIES.filter(s=>s.cat==="bloom"),fills=SPECIES.filter(s=>s.cat==="filler");
-  const pick=a=>a[Math.floor(R()*a.length)];
-  // foliage fan
-  const ng=4+Math.floor(R()*3);
-  for(let i=0;i<ng;i++){const sp=pick(greens),t=i/(ng-1);
-    state.items.push({uid:UIDC++,sp:sp.id,vi:Math.floor(R()*sp.variants.length),
-      x:VCX+(t-.5)*330+(R()-.5)*40,y:300+Math.abs(t-.5)*90+(R()-.5)*50,
-      s:.95+R()*.4,r:(t-.5)*64+(R()-.5)*14,flip:R()<.5,hue:0})}
-  // focal palette: 2-3 bloom species repeated
-  const palette=[pick(blooms)];while(palette.length<3){const b=pick(blooms);if(!palette.includes(b))palette.push(b)}
-  const nb=7+Math.floor(R()*6);
-  for(let i=0;i<nb;i++){
-    const sp=palette[Math.floor(R()*palette.length)],vi=Math.floor(R()*sp.variants.length);
-    const a=(i/nb)*Math.PI*2+R(),rad=R()*150;
-    state.items.push({uid:UIDC++,sp:sp.id,vi,
-      x:VCX+Math.cos(a)*rad*1.15,y:295+Math.sin(a)*rad*.78-(sp.h>140?60:0),
-      s:.8+R()*.55,r:(R()-.5)*40,flip:R()<.5,hue:0})}
-  // fillers
-  const nf=3+Math.floor(R()*3);
-  for(let i=0;i<nf;i++){const sp=pick(fills);
-    state.items.push({uid:UIDC++,sp:sp.id,vi:Math.floor(R()*sp.variants.length),
-      x:VCX+(R()-.5)*340,y:250+(R()-.5)*160,s:.85+R()*.4,r:(R()-.5)*50,flip:R()<.5,hue:0})}
-  // sort so taller spikes sit behind
-  state.items.sort((a,b)=>(byId(b.sp).h)-(byId(a.sp).h));
-  render();syncInsp();
+  state.items=[];SEL=null;
+  state.vase.id=rec.vase;state.bg=rec.bg;
+  state.drape.on=rec.drape!=null;if(rec.drape!=null)state.drape.ci=rec.drape;
+  const expand=a=>a.flatMap(([id,vi,n])=>Array.from({length:n},()=>[id,vi]));
+  // greenery fan
+  const gl=expand(rec.greens);
+  gl.forEach(([id,vi],i)=>{const t=gl.length>1?i/(gl.length-1):.5;
+    state.items.push({uid:UIDC++,sp:id,vi,
+      x:VCX+(t-.5)*340+(R()-.5)*36,y:298+Math.abs(t-.5)*86+(R()-.5)*44,
+      s:.95+R()*.35,r:(t-.5)*66+(R()-.5)*12,flip:t>.5,hue:0})});
+  // focal dome — golden-angle spiral, big in the heart, smaller at the rim
+  const fl=expand(rec.focals);
+  fl.forEach(([id,vi],i)=>{const sp=byId(id);
+    const a=i*2.39996+R()*.5, rad=Math.sqrt((i+.6)/fl.length)*165;
+    const tall=sp.h>140;
+    state.items.push({uid:UIDC++,sp:id,vi,
+      x:VCX+Math.cos(a)*rad*1.12,
+      y:296+Math.sin(a)*rad*.7-(tall?70:0),
+      s:(1.16-(rad/165)*.34)*(.95+R()*.12),
+      r:(R()-.5)*34,flip:R()<.5,hue:0})});
+  // accents tucked at mid radius
+  expand(rec.accents).forEach(([id,vi])=>{const a=R()*6.28,rad=90+R()*95;
+    const tall=byId(id).h>140;
+    state.items.push({uid:UIDC++,sp:id,vi,
+      x:VCX+Math.cos(a)*rad*1.1,y:292+Math.sin(a)*rad*.72-(tall?60:0),
+      s:.78+R()*.3,r:(R()-.5)*44,flip:R()<.5,hue:0})});
+  // airy fillers at the edges
+  expand(rec.fills).forEach(([id,vi])=>{const a=R()*6.28,rad=120+R()*85;
+    state.items.push({uid:UIDC++,sp:id,vi,
+      x:VCX+Math.cos(a)*rad*1.15,y:270+Math.sin(a)*rad*.7,
+      s:.8+R()*.35,r:(R()-.5)*52,flip:R()<.5,hue:0})});
+  // layering: tall species behind, then lower heads in front
+  state.items.sort((a,b)=>(byId(b.sp).h-byId(a.sp).h)||(a.y-b.y));
+}
+$("btnRandom").onclick=()=>{
+  snapshot();
+  let ri;do{ri=Math.floor(Math.random()*RECIPES.length)}while(ri===lastRecipe&&RECIPES.length>1);
+  lastRecipe=ri;
+  composeRecipe(RECIPES[ri]);
+  render();syncInsp();syncStudioUI();
+  const hb=document.getElementById("countbar");
+  hb.textContent=`“${RECIPES[ri].name}” — ${state.items.length} stems`;
 };
 
 /* save / load */
 $("btnSave").onclick=()=>{
-  const blob=new Blob([JSON.stringify({app:"atelier-bloom",v:1,state},null,1)],{type:"application/json"});
+  const blob=new Blob([JSON.stringify({app:"atelier-bloom",v:2,state},null,1)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);
   a.download="bouquet_design.json";a.click();URL.revokeObjectURL(a.href)};
 $("btnLoad").onclick=()=>$("fileLoad").click();
@@ -1434,9 +1914,9 @@ $("fileLoad").onchange=e=>{
   const r=new FileReader();
   r.onload=()=>{try{
     const j=JSON.parse(r.result);if(!j.state)throw 0;
-    snapshot();Object.assign(state,j.state);
+    snapshot();Object.assign(state,j.state);normalize();
     UIDC=Math.max(1,...state.items.map(i=>i.uid+1));
-    SEL=null;render();syncInsp();
+    SEL=null;render();syncInsp();syncStudioUI();
   }catch(_){alert("That file isn't a saved bouquet design.")}};
   r.readAsText(f);e.target.value=""};
 
@@ -1456,11 +1936,19 @@ $("btnExport").onclick=()=>{
 };
 
 /* mobile drawers */
-document.querySelectorAll(".mtab").forEach(t=>t.onclick=()=>{
-  document.querySelectorAll(".mtab").forEach(x=>x.classList.remove("on"));t.classList.add("on");
-  document.getElementById("library").classList.toggle("open",t.dataset.m==="library");
-  document.getElementById("inspector").classList.toggle("open",t.dataset.m==="inspector");
-  fitStage()});
+const isMobile=()=>window.innerWidth<=880;
+function setDrawer(which){ // "library" | "inspector" | "stage"
+  document.querySelectorAll(".mtab").forEach(x=>x.classList.toggle("on",x.dataset.m===which));
+  document.getElementById("library").classList.toggle("open",which==="library");
+  document.getElementById("inspector").classList.toggle("open",which==="inspector");
+  document.body.classList.toggle("drawer-open",which!=="stage");
+  fitStage();
+}
+document.querySelectorAll(".mtab").forEach(t=>t.onclick=()=>setDrawer(t.dataset.m));
+// tapping the design closes any open drawer on mobile
+document.getElementById("stagewrap").addEventListener("pointerdown",()=>{
+  if(isMobile()&&document.body.classList.contains("drawer-open"))setDrawer("stage");
+});
 
 /* ---------- opening arrangement ---------- */
 function starter(){
